@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Public Photo Upload and Display</title>
+  <style>
+    /* Add some basic styling to make the page look decent */
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .photo-grid img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Public Photo Upload and Display</h1>
+  <form id="upload-form">
+    <input type="file" id="photo-input" accept="image/*">
+    <button id="upload-button">Upload Photo</button>
+  </form>
+  <div class="photo-grid" id="photo-grid"></div>
+
+  <script>
+    const apiKey = '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';
+    const repoName = 'game';
+    const userName = 'toolmap';
+    const apiUrl = `https://api.github.com/repos/${userName}/${repoName}/contents/`;
+
+    // Function to upload a photo to GitHub
+    async function uploadPhoto(file) {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: 'Upload photo',
+          content: await file.text(),
+          branch: 'main'
+        })
+      });
+      const data = await response.json();
+      return data.commit.sha;
+    }
+
+    // Function to display all photos
+    async function displayPhotos() {
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`
+        }
+      });
+      const data = await response.json();
+      const photoGrid = document.getElementById('photo-grid');
+      photoGrid.innerHTML = '';
+      data.forEach((file) => {
+        const img = document.createElement('img');
+        img.src = `https://raw.githubusercontent.com/${userName}/${repoName}/${file.sha}`;
+        photoGrid.appendChild(img);
+      });
+    }
+
+    // Event listeners
+    document.getElementById('upload-button').addEventListener('click', async (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById('photo-input');
+      const file = fileInput.files[0];
+      const sha = await uploadPhoto(file);
+      await displayPhotos();
+    });
+
+    // Display all photos on page load
+    displayPhotos();
+  </script>
+</body>
+</html>
